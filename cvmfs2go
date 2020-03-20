@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+CACHE="$HOME/cvmfs-cache"
+mkdir -p ${CACHE}
+
+help () {
+echo "This script+container will auto-mount the specified repositories (comma separated) from CVMFS_REPOSITORIES env variable (STRICTLY REQUIRED!!!)
+Command format: cvmfs2go command
+If no command is used a bash shell will be started
+Singularity instance be be steered by env variable SINGULARITY_CVMFS2GO that should contain the exact arguments string as would have been used in cli
+or by usage of any Singularity steering env variables detailed at https://sylabs.io/guides/3.5/user-guide/appendix.html
+The Singularity image can be set arbitrary by the value of CVMFS2GO_IMGPATH"
+}
+
+[[ "${1}" == "help" ]] && { help; exit; }
+[[ "${1}" == "cleanup" ]] && { rm -rf ${CACHE}/* ; exit; }
+
+[[ -z "${CVMFS_REPOSITORIES}" ]] && { echo "no CVMFS_REPOSITORIES defined!!!"; help; exit 1; }
+declare -a FUSEMOUNT_ARGS
+IFS=',' read -ra repo_list <<< "${CVMFS_REPOSITORIES}"
+for i in "${repo_list[@]}" ; do
+    FUSEMOUNT_ARGS+=(--fusemount "\"container:cvmfs2 ${i} /cvmfs/${i}\"")
+done
+
+[[ -n "${SINGULARITY_BINDPATH}" ]] && export SINGULARITY_BINDPATH="${CACHE}:/var/lib/cvmfs,${SINGULARITY_BINDPATH}" || export SINGULARITY_BINDPATH="${CACHE}:/var/lib/cvmfs"
+[[ -z "${SINGULARITY_SCRATCHDIR}" ]] && export SINGULARITY_SCRATCHDIR="/var/run/cvmfs"
+
+declare -a SINGULARITY_CVMFS2GO_ARGS
+[[ -n "${SINGULARITY_CVMFS2GO}" ]] && read -ra SINGULARITY_CVMFS2GO_ARGS <<< "${SINGULARITY_CVMFS2GO}"
+
+[[ -z "${CVMFS2GO_IMGPATH}" ]] && export CVMFS2GO_IMGPATH="./el7cvmfs"
+
+singularity run "${FUSEMOUNT_ARGS[@]}" "${SINGULARITY_CVMFS2GO_ARGS[@]}" ${CVMFS2GO_IMGPATH} "${@}"
+

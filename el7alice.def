@@ -1,0 +1,71 @@
+Bootstrap: yum
+OSVersion: 7
+MirrorURL: http://monitor.spacescience.ro/mirrors/centos/7/os/x86_64/
+UpdateURL: http://monitor.spacescience.ro/mirrors/centos/7/updates/x86_64/
+Include: yum curl yum-utils fuse fuse-libs fuse3 fuse3-libs bash util-linux sudo bindfs
+
+%help
+This container is a wrapper for CVMFS distributed ALICE software.
+This is used by the <alisoft> wrapper that prepare the singularity command line and start the image.
+alisoft usage:
+alisoft load|enter PACKAGE_NAME command
+
+%files
+default.local_pac /etc/cvmfs/default.local
+sudoers_cvmfs /etc/sudoers
+
+%environment
+
+%post
+# replace centos base links
+#yum-config-manager --save --setopt=base.mirrorlist= &>/dev/null
+yum-config-manager --save --setopt=base.baseurl=http://monitor.spacescience.ro/mirrors/centos/7/os/x86_64/ &>/dev/null
+yum-config-manager --save --setopt=base.keepcache=False &>/dev/null
+
+#yum-config-manager --save --setopt=updates.mirrorlist= &>/dev/null
+yum-config-manager --save --setopt=updates.baseurl=http://monitor.spacescience.ro/mirrors/centos/7/updates/x86_64/ &>/dev/null
+yum-config-manager --save --setopt=updates.keepcache=False &>/dev/null
+
+#yum-config-manager --save --setopt=extras.mirrorlist= &>/dev/null
+yum-config-manager --save --setopt=extras.baseurl=http://monitor.spacescience.ro/mirrors/centos/7/extras/x86_64/ &>/dev/null
+yum-config-manager --save --setopt=extras.keepcache=False &>/dev/null
+
+#yum-config-manager --save --setopt=centosplus.mirrorlist= &>/dev/null
+yum-config-manager --save --setopt=centosplus.baseurl=http://monitor.spacescience.ro/mirrors/centos/7/centosplus/x86_64/ &>/dev/null
+yum-config-manager --save --setopt=centosplus.keepcache=False &>/dev/null
+
+#yum-config-manager --save --setopt=epel.mirrorlist= &>/dev/null
+yum-config-manager --save --setopt=epel.baseurl=http://monitor.spacescience.ro/mirrors/epel/7/x86_64/ &>/dev/null
+yum-config-manager --save --setopt=epel.keepcache=False &>/dev/null
+
+#yum-config-manager --save --setopt=epel-debuginfo.mirrorlist= &>/dev/null
+yum-config-manager --save --setopt=epel-debuginfo.baseurl=http://monitor.spacescience.ro/mirrors/epel/7/x86_64/debug/ &>/dev/null
+yum-config-manager --save --setopt=epel-debuginfo.keepcache=False &>/dev/null
+
+#yum-config-manager --save --setopt=epel-source.mirrorlist= &>/dev/null
+yum-config-manager --save --setopt=epel-source.baseurl=http://monitor.spacescience.ro/mirrors/epel/7/SRPMS/ &>/dev/null
+yum-config-manager --save --setopt=epel-source.keepcache=False &>/dev/null
+
+yum -y update && yum -y install https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-latest.noarch.rpm https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm https://linuxsoft.cern.ch/wlcg/centos7/x86_64/wlcg-repo-1.0.0-1.el7.noarch.rpm;
+yum install -y HEP_OSlibs cvmfs cvmfs-config-default cvmfs-fuse3;
+rm -rf /var/cache/yum;
+
+%runscript
+
+export PATH="/cvmfs/alice.cern.ch/bin:${PATH}"
+VERB="${1}"
+shift
+PKG="${1}"
+shift
+
+if [[ "${VERB}" == "load" ]]; then
+    eval $(/cvmfs/alice.cern.ch/bin/alienv printenv VO_ALICE@${PKG});
+    [[ -n "${@}" ]] && exec "${@}" || bash
+elif [[ "${VERB}" == "enter" ]]; then
+    unset PROMPT_COMMAND
+    echo "You will be withing alienv shell within container! Exit _2_ times to return to your environment!"
+    /cvmfs/alice.cern.ch/bin/alienv enter VO_ALICE@${PKG}
+else
+    [[ -n "${@}" ]] && exec "${@}" || bash
+fi
+

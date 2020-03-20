@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+CACHE="$HOME/cvmfs-cache"
+mkdir -p ${CACHE}
+
+help () {
+echo "This script+container will auto-mount alice.cern.ch,alice-ocdb.cern.ch repositories.
+Command format: alisoft load|enter PACKAGE command
+All arguments are optional but load|enter MUST be followed by a package name - just the name, without VO_ALICE@
+If enter is used a new shell (the known alienv enter shell) is started so any other command within line is ignored
+If load is used, the specified package/module environment is loaded and any subsequent commands are run within that environment e.g.:
+alisoft load AliPhysics::vAN-20200317_ROOT6-1 aliroot
+If no command is used a bash shell with the PACKAGE environment loaded will be started
+ALISOFT_AUTOLOAD/ALISOFT_AUTOENTER : The loading/entering the package can be steered by these env variables set to the desired package name.
+SINGULARITY_ALISOFT : Singularity instance be be steered by this env variable that should contain the exact arguments string as would have been used in cli
+or by usage of any Singularity steering env variables detailed at https://sylabs.io/guides/3.5/user-guide/appendix.html
+The Singularity image can be set arbitrary by the value of ALISOFT_IMGPATH"
+}
+
+[[ "${1}" == "help" ]] && { help; exit; }
+[[ "${1}" == "cleanup" ]] && { rm -rf ${CACHE}/* ; exit; }
+
+[[ -n "${SINGULARITY_BINDPATH}" ]] && export SINGULARITY_BINDPATH="${CACHE}:/var/lib/cvmfs,${SINGULARITY_BINDPATH}" || export SINGULARITY_BINDPATH="${CACHE}:/var/lib/cvmfs"
+[[ -z "${SINGULARITY_SCRATCHDIR}" ]] && export SINGULARITY_SCRATCHDIR="/var/run/cvmfs"
+
+CVMFS_REPOSITORIES="alice.cern.ch,alice-ocdb.cern.ch"
+declare -a FUSEMOUNT_ARGS
+IFS=',' read -ra repo_list <<< "${CVMFS_REPOSITORIES}"
+for i in "${repo_list[@]}" ; do
+    FUSEMOUNT_ARGS+=(--fusemount "\"container:cvmfs2 ${i} /cvmfs/${i}\"")
+done
+
+declare -a SINGULARITY_ALISOFT_ARGS
+[[ -n "${SINGULARITY_ALISOFT}" ]] && read -ra SINGULARITY_ALISOFT_ARGS <<< "${SINGULARITY_ALISOFT}"
+
+[[ -n "${ALISOFT_AUTOLOAD}" ]] && { VERB='load'; PACKAGE="${ALISOFT_AUTOLOAD}"; }
+[[ -n "${ALISOFT_AUTOENTER}" ]] && { VERB='enter'; PACKAGE="${ALISOFT_AUTOENTER}"; }
+
+[[ -z "${ALISOFT_IMGPATH}" ]] && export ALISOFT_IMGPATH="./el7alice"
+
+if [[ -z "${VERB}" ]]; then
+    VERB="${1}"
+    shift
+    PACKAGE="${1}"
+    shift
+fi
+
+singularity run "${FUSEMOUNT_ARGS[@]}" "${SINGULARITY_ALISOFT_ARGS[@]}" ${ALISOFT_IMGPATH} ${VERB} ${PACKAGE} "${@}"
+
