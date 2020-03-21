@@ -1,0 +1,1 @@
+eval $(/cvmfs/alice.cern.ch/bin/alienv printenv VO_ALICE@AliPhysics::vAN-20200317_ROOT6-1)

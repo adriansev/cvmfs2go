@@ -4,30 +4,45 @@ CACHE="$HOME/cvmfs-cache"
 mkdir -p ${CACHE}
 
 help () {
-echo "This script+container will auto-mount the specified repositories (comma separated) from CVMFS_REPOSITORIES env variable (STRICTLY REQUIRED!!!)
+echo "Generic HEP oriented container (it includes HEP_OSlibs dependency list)
+This script+container _require_ specification of CVMFS_REPOSITORIES env variable (comma separated list of repositories)
+Singularity instance be be steered by env variable SINGULARITY_CVMFS2GO that should
+contain the exact arguments string as would have been used in cli or by usage of any Singularity steering env variables
+detailed at https://sylabs.io/guides/3.5/user-guide/appendix.html
+The Singularity image path can be set arbitrary by the value of CVMFS2GO_IMGPATH
+The container can be pre-setup by the usage of files prefixed with CVMFS2GO_EXEC_ or CVMFS2GO_LOAD_
+in the current directory on home directory. (the ones from current directory take precedence)
+If given as 1st argument a name that start with CVMFS2GO_LOAD_ it will be sourced before running a command or starting the shell
+If given as 1st argument a name that start with CVMFS2GO_EXEC_ the first line of file will be executed
 Command format: cvmfs2go command
 If no command is used a bash shell will be started
-Singularity instance be be steered by env variable SINGULARITY_CVMFS2GO that should contain the exact arguments string as would have been used in cli
-or by usage of any Singularity steering env variables detailed at https://sylabs.io/guides/3.5/user-guide/appendix.html
-The Singularity image can be set arbitrary by the value of CVMFS2GO_IMGPATH"
+N.B.!!! a $HOME/cvmfs-cache directory was created on host for keeping the cvmfs cache!
+IT WILL _NOT_ BE CLEAN UP AUTOMATICALLY!!!
+run : cvmfs2go cleanup
+CVMFS_ALIEN_CACHE documentation specify that cache can be deleted even when in use
+https://cvmfs.readthedocs.io/en/stable/cpt-configure.html#alien-cache"
 }
 
 [[ "${1}" == "help" ]] && { help; exit; }
 [[ "${1}" == "cleanup" ]] && { rm -rf ${CACHE}/* ; exit; }
 
+# check and use external defined SINGULARITY_BINDPATH and SINGULARITY_SCRATCHDIR
+[[ -n "${SINGULARITY_BINDPATH}" ]] && export SINGULARITY_BINDPATH="${CACHE}:/var/lib/cvmfs,${SINGULARITY_BINDPATH}" || export SINGULARITY_BINDPATH="${CACHE}:/var/lib/cvmfs"
+[[ -z "${SINGULARITY_SCRATCHDIR}" ]] && export SINGULARITY_SCRATCHDIR="/var/run/cvmfs"
+
 [[ -z "${CVMFS_REPOSITORIES}" ]] && { echo "no CVMFS_REPOSITORIES defined!!!"; help; exit 1; }
+# Process repository list for --fusemount usage
 declare -a FUSEMOUNT_ARGS
 IFS=',' read -ra repo_list <<< "${CVMFS_REPOSITORIES}"
 for i in "${repo_list[@]}" ; do
     FUSEMOUNT_ARGS+=(--fusemount "\"container:cvmfs2 ${i} /cvmfs/${i}\"")
 done
 
-[[ -n "${SINGULARITY_BINDPATH}" ]] && export SINGULARITY_BINDPATH="${CACHE}:/var/lib/cvmfs,${SINGULARITY_BINDPATH}" || export SINGULARITY_BINDPATH="${CACHE}:/var/lib/cvmfs"
-[[ -z "${SINGULARITY_SCRATCHDIR}" ]] && export SINGULARITY_SCRATCHDIR="/var/run/cvmfs"
-
+# Process additional singularity command line settings that can be setup by environment
 declare -a SINGULARITY_CVMFS2GO_ARGS
 [[ -n "${SINGULARITY_CVMFS2GO}" ]] && read -ra SINGULARITY_CVMFS2GO_ARGS <<< "${SINGULARITY_CVMFS2GO}"
 
+# Specify the location of Singularity image
 [[ -z "${CVMFS2GO_IMGPATH}" ]] && export CVMFS2GO_IMGPATH="./el7cvmfs"
 
 singularity run "${FUSEMOUNT_ARGS[@]}" "${SINGULARITY_CVMFS2GO_ARGS[@]}" ${CVMFS2GO_IMGPATH} "${@}"

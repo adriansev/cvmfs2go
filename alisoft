@@ -4,17 +4,22 @@ CACHE="$HOME/cvmfs-cache"
 mkdir -p ${CACHE}
 
 help () {
-echo "This script+container will auto-mount alice.cern.ch,alice-ocdb.cern.ch repositories.
-Command format: alisoft load|enter PACKAGE command
-All arguments are optional but load|enter MUST be followed by a package name - just the name, without VO_ALICE@
-If enter is used a new shell (the known alienv enter shell) is started so any other command within line is ignored
-If load is used, the specified package/module environment is loaded and any subsequent commands are run within that environment e.g.:
-alisoft load AliPhysics::vAN-20200317_ROOT6-1 aliroot
-If no command is used a bash shell with the PACKAGE environment loaded will be started
-ALISOFT_AUTOLOAD/ALISOFT_AUTOENTER : The loading/entering the package can be steered by these env variables set to the desired package name.
-SINGULARITY_ALISOFT : Singularity instance be be steered by this env variable that should contain the exact arguments string as would have been used in cli
-or by usage of any Singularity steering env variables detailed at https://sylabs.io/guides/3.5/user-guide/appendix.html
-The Singularity image can be set arbitrary by the value of ALISOFT_IMGPATH"
+echo "ALICE oriented script!! It will load and use alice.cern.ch,alice-ocdb.cern.ch
+Singularity instance be be steered by env variable SINGULARITY_CVMFS2GO that should
+contain the exact arguments string as would have been used in cli or by usage of any Singularity steering env variables
+detailed at https://sylabs.io/guides/3.5/user-guide/appendix.html
+The Singularity image path can be set arbitrary by the value of CVMFS2GO_IMGPATH
+The container can be pre-setup by the usage of files prefixed with CVMFS2GO_EXEC_ or CVMFS2GO_LOAD_
+in the current directory on home directory. (the ones from current directory take precedence)
+If given as 1st argument a name that start with CVMFS2GO_LOAD_ it will be sourced before running a command or starting the shell
+If given as 1st argument a name that start with CVMFS2GO_EXEC_ the first line of file will be executed
+Command format: cvmfs2go command
+If no command is used a bash shell will be started
+N.B.!!! a $HOME/cvmfs-cache directory was created on host for keeping the cvmfs cache!
+IT WILL _NOT_ BE CLEAN UP AUTOMATICALLY!!!
+run : cvmfs2go cleanup
+CVMFS_ALIEN_CACHE documentation specify that cache can be deleted even when in use
+https://cvmfs.readthedocs.io/en/stable/cpt-configure.html#alien-cache"
 }
 
 [[ "${1}" == "help" ]] && { help; exit; }
@@ -30,20 +35,12 @@ for i in "${repo_list[@]}" ; do
     FUSEMOUNT_ARGS+=(--fusemount "\"container:cvmfs2 ${i} /cvmfs/${i}\"")
 done
 
-declare -a SINGULARITY_ALISOFT_ARGS
-[[ -n "${SINGULARITY_ALISOFT}" ]] && read -ra SINGULARITY_ALISOFT_ARGS <<< "${SINGULARITY_ALISOFT}"
+# Process additional singularity command line settings that can be setup by environment
+declare -a SINGULARITY_CVMFS2GO_ARGS
+[[ -n "${SINGULARITY_CVMFS2GO}" ]] && read -ra SINGULARITY_CVMFS2GO_ARGS <<< "${SINGULARITY_CVMFS2GO}"
 
-[[ -n "${ALISOFT_AUTOLOAD}" ]] && { VERB='load'; PACKAGE="${ALISOFT_AUTOLOAD}"; }
-[[ -n "${ALISOFT_AUTOENTER}" ]] && { VERB='enter'; PACKAGE="${ALISOFT_AUTOENTER}"; }
+# Specify the location of Singularity image
+[[ -z "${CVMFS2GO_IMGPATH}" ]] && export CVMFS2GO_IMGPATH="./el7cvmfs"
 
-[[ -z "${ALISOFT_IMGPATH}" ]] && export ALISOFT_IMGPATH="./el7alice"
-
-if [[ -z "${VERB}" ]]; then
-    VERB="${1}"
-    shift
-    PACKAGE="${1}"
-    shift
-fi
-
-singularity run "${FUSEMOUNT_ARGS[@]}" "${SINGULARITY_ALISOFT_ARGS[@]}" ${ALISOFT_IMGPATH} ${VERB} ${PACKAGE} "${@}"
+singularity run "${FUSEMOUNT_ARGS[@]}" "${SINGULARITY_CVMFS2GO_ARGS[@]}" ${CVMFS2GO_IMGPATH} "${@}"
 
