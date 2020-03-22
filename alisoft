@@ -42,5 +42,5 @@ declare -a SINGULARITY_CVMFS2GO_ARGS
 # Specify the location of Singularity image
 [[ -z "${CVMFS2GO_IMGPATH}" ]] && export CVMFS2GO_IMGPATH="./el7cvmfs"
 
-singularity run "${FUSEMOUNT_ARGS[@]}" "${SINGULARITY_CVMFS2GO_ARGS[@]}" ${CVMFS2GO_IMGPATH} "${@}"
+exec singularity run "${FUSEMOUNT_ARGS[@]}" "${SINGULARITY_CVMFS2GO_ARGS[@]}" ${CVMFS2GO_IMGPATH} "${@}"
 
