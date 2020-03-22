@@ -4,6 +4,12 @@ MirrorURL: http://monitor.spacescience.ro/mirrors/centos/7/os/x86_64/
 UpdateURL: http://monitor.spacescience.ro/mirrors/centos/7/updates/x86_64/
 Include: yum yum-utils bash bash-completion util-linux coreutils sudo curl fuse fuse-libs fuse3 fuse3-libs bindfs
 
+%labels
+    Author Adrian.Sevcenco@spacescience.ro
+    Version 0.0.1
+    Description Minimal el7, HEP_OSlibs + cvmfs (configs: default+egi+osg) container
+
+
 %help
 Generic HEP oriented container (it includes HEP_OSlibs dependency list)
 that allows mounting of CVMFS repositories without any host requirement.
