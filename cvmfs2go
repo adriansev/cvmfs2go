@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-CACHE="$HOME/cvmfs-cache"
-mkdir -p ${CACHE}
+CACHE="${HOME}/cvmfs-cache"
+[[ -z "${SINGULARITY_CACHEDIR}" ]] && SINGULARITY_CACHEDIR="${HOME}/singularity-cache"
+export SINGULARITY_CACHEDIR
+mkdir -p ${CACHE} ${SINGULARITY_CACHEDIR}
 
 help () {
 echo "Generic HEP oriented container (it includes HEP_OSlibs dependency list)
@@ -43,7 +45,11 @@ declare -a SINGULARITY_CVMFS2GO_ARGS
 [[ -n "${SINGULARITY_CVMFS2GO}" ]] && read -ra SINGULARITY_CVMFS2GO_ARGS <<< "${SINGULARITY_CVMFS2GO}"
 
 # Specify the location of Singularity image
-[[ -z "${CVMFS2GO_IMGPATH}" ]] && export CVMFS2GO_IMGPATH="./el7cvmfs"
+if [[ -z "${CVMFS2GO_IMGPATH}" ]]; then
+    NAME="el7cvmfs.sif"
+    singularity pull --name ${NAME} shub://adriansev/cvmfs2go:latest &> /dev/null
+    export CVMFS2GO_IMGPATH="${NAME}"
+fi
 
-exec singularity run "${FUSEMOUNT_ARGS[@]}" "${SINGULARITY_CVMFS2GO_ARGS[@]}" ${CVMFS2GO_IMGPATH} "${@}"
+exec singularity -s run "${FUSEMOUNT_ARGS[@]}" "${SINGULARITY_CVMFS2GO_ARGS[@]}" ${CVMFS2GO_IMGPATH} "${@}"
 
