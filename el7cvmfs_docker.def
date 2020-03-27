@@ -1,6 +1,6 @@
 Bootstrap: docker
 From: centos:centos7
-Include: yum yum-utils bash bash-completion util-linux coreutils sudo curl fuse fuse-libs fuse3 fuse3-libs bindfs
+Include: yum yum-utils bash bash-completion gawk util-linux coreutils sudo curl fuse fuse-libs fuse3 fuse3-libs bindfs
 
 %labels
     Author Adrian.Sevcenco@spacescience.ro
@@ -28,6 +28,7 @@ default.local /etc/cvmfs/default.local
 sudoers_cvmfs /etc/sudoers
 
 %post
+mkdir -p /cvmfs /etc/cvmfs /var/lib/cvmfs
 yum -y update && yum -y install \
 https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-latest.noarch.rpm \
 https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
