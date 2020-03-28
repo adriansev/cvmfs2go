@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
-CACHE="${HOME}/cvmfs-cache"
-[[ -z "${SINGULARITY_CACHEDIR}" ]] && SINGULARITY_CACHEDIR="${HOME}/singularity-cache"
-export SINGULARITY_CACHEDIR
-mkdir -p ${CACHE} ${SINGULARITY_CACHEDIR}
+CVMFS2GO_BASE_DIR="${HOME}/.cvmfs"
+CACHE="${CVMFS2GO_BASE_DIR}/cvmfs-cache"
+CONFIG_DIR="${CVMFS2GO_BASE_DIR}/configs"
+DEFAULT_CONFDIR="${CONFIG_DIR}/default"
+DEFAULT_CONF="${DEFAULT_CONFDIR}/default.local"
+MOUNT_DIR="${CVMFS2GO_BASE_DIR}/mount"
+IMAGE_DIR="${CVMFS2GO_BASE_DIR}/images"
+mkdir -p ${CACHE} ${CONFIG_DIR} ${IMAGE_DIR} ${DEFAULT_CONFDIR} ${MOUNT_DIR}
 
 help () {
 echo "Generic HEP oriented container (it includes HEP_OSlibs dependency list)
@@ -46,8 +50,8 @@ declare -a SINGULARITY_CVMFS2GO_ARGS
 
 # Specify the location of Singularity image
 if [[ -z "${CVMFS2GO_IMGPATH}" ]]; then
-    NAME="el7cvmfs.sif"
-    singularity pull --name ${NAME} shub://adriansev/cvmfs2go:latest &> /dev/null
+    NAME="${IMAGE_DIR}/el7hep.sif"
+    singularity pull --name ${NAME} shub://adriansev/el7cvmfs.sing:latest &> /dev/null
     export CVMFS2GO_IMGPATH="${NAME}"
 fi
 

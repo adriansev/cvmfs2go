@@ -1,1 +1,0 @@
-el7cvmfs_docker.def
