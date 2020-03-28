@@ -17,14 +17,9 @@ This script+container _require_ specification of CVMFS_REPOSITORIES env variable
 Singularity instance be be steered by env variable SINGULARITY_CVMFS2GO that should
 contain the exact arguments string as would have been used in cli or by usage of any Singularity steering env variables
 detailed at https://sylabs.io/guides/3.5/user-guide/appendix.html
-The Singularity image path can be set arbitrary by the value of CVMFS2GO_IMGPATH
-The container can be pre-setup by the usage of files prefixed with CVMFS2GO_EXEC_ or CVMFS2GO_LOAD_
-in the current directory on home directory. (the ones from current directory take precedence)
-If given as 1st argument a name that start with CVMFS2GO_LOAD_ it will be sourced before running a command or starting the shell
-If given as 1st argument a name that start with CVMFS2GO_EXEC_ the first line of file will be executed
-Command format: cvmfs2go command
+Command format: ${0} command
 If no command is used a bash shell will be started
-N.B.!!! a $HOME/cvmfs-cache directory was created on host for keeping the cvmfs cache!
+N.B.!!! a cache directory was created on host for keeping the cvmfs cache! -> ${CACHE}
 IT WILL _NOT_ BE CLEAN UP AUTOMATICALLY!!!
 run : cvmfs2go cleanup
 CVMFS_ALIEN_CACHE documentation specify that cache can be deleted even when in use
@@ -111,18 +106,26 @@ for repo in $(ls ${MOUNT_DIR}); do
 done
 export SINGULARITY_BINDPATH
 
-echo "${SINGULARITY_BINDPATH}"
-
 # Process additional singularity command line settings that can be setup by environment
 declare -a SINGULARITY_CVMFS2GO_ARGS
 [[ -n "${SINGULARITY_CVMFS2GO}" ]] && read -ra SINGULARITY_CVMFS2GO_ARGS <<< "${SINGULARITY_CVMFS2GO}"
 
 # Specify the location of Singularity image
-if [[ -z "${CVMFS2GO_IMGPATH}" ]]; then
-    NAME="${IMAGE_DIR}/el7hep.sif"
-    singularity pull --name ${NAME} shub://adriansev/el7hep:latest &> /dev/null
-    export CVMFS2GO_IMGPATH="${NAME}"
+if [[ -z "${CVMFS2GO_IMG}" ]]; then
+    # CVMFS2GO_IMG="shub://adriansev/el7cvmfs.sing:latest"
+    # CVMFS2GO_IMG="http://asevcenc.web.cern.ch/asevcenc/singularity/el7cvmfs"
+    CVMFS2GO_IMG="shub://adriansev/el7hep.sing"
 fi
 
-exec singularity -s run "${SINGULARITY_CVMFS2GO_ARGS[@]}" ${CVMFS2GO_IMGPATH} "${@}"
+# it was stated that singularity cache is not suitable for concurent access
+# then let's save the image and use it
+if [[ ! -e "${CVMFS2GO_IMG}" ]]; then # unless is already a local image
+    LOCAL_NAME="${IMAGE_DIR}/$(basename ${CVMFS2GO_IMG} | sed 's/:/_/g').sif"
+    if [[ ! -e "${LOCAL_NAME}" ]]; then
+        singularity pull --name ${LOCAL_NAME} ${CVMFS2GO_IMG} #  &> /dev/null
+        export CVMFS2GO_IMG="${LOCAL_NAME}"
+    fi
+fi
+
+exec singularity -s run "${SINGULARITY_CVMFS2GO_ARGS[@]}" ${CVMFS2GO_IMG} "${@}"
 
