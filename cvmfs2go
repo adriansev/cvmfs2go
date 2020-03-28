@@ -30,7 +30,7 @@ https://cvmfs.readthedocs.io/en/stable/cpt-configure.html#alien-cache"
 }
 
 [[ "${1}" == "help" ]] && { help; exit; }
-[[ "${1}" == "cleanup" ]] && { rm -rf ${CACHE}/* ; exit; }
+[[ "${1}" == "cleanup" ]] && { rm -rf ${CACHE}/* ${IMAGE_DIR}/* ; exit; }
 
 # check and use external defined SINGULARITY_BINDPATH and SINGULARITY_SCRATCHDIR
 [[ -n "${SINGULARITY_BINDPATH}" ]] && export SINGULARITY_BINDPATH="${CACHE}:/var/lib/cvmfs,${SINGULARITY_BINDPATH}" || export SINGULARITY_BINDPATH="${CACHE}:/var/lib/cvmfs"
@@ -50,7 +50,7 @@ declare -a SINGULARITY_CVMFS2GO_ARGS
 
 # Specify the location of Singularity image
 if [[ -z "${CVMFS2GO_IMGPATH}" ]]; then
-    NAME="${IMAGE_DIR}/el7cvmfs.sif"
+    NAME="${IMAGE_DIR}/el7cvmfs_native.sif"
     # singularity pull --name ${NAME} shub://adriansev/el7cvmfs.sing:latest &> /dev/null
     singularity pull --name ${NAME} http://asevcenc.web.cern.ch/asevcenc/singularity/el7cvmfs &> /dev/null
     export CVMFS2GO_IMGPATH="${NAME}"
