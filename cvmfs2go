@@ -22,7 +22,7 @@ If given as 1st argument a name that start with CVMFS2GO_LOAD_ it will be source
 If given as 1st argument a name that start with CVMFS2GO_EXEC_ the first line of file will be executed
 Command format: cvmfs2go command
 If no command is used a bash shell will be started
-N.B.!!! a $HOME/cvmfs-cache directory was created on host for keeping the cvmfs cache!
+N.B.!!! a cache directory was created on host for keeping the cvmfs cache! -> ${CACHE}
 IT WILL _NOT_ BE CLEAN UP AUTOMATICALLY!!!
 run : cvmfs2go cleanup
 CVMFS_ALIEN_CACHE documentation specify that cache can be deleted even when in use
@@ -50,8 +50,9 @@ declare -a SINGULARITY_CVMFS2GO_ARGS
 
 # Specify the location of Singularity image
 if [[ -z "${CVMFS2GO_IMGPATH}" ]]; then
-    NAME="${IMAGE_DIR}/el7hep.sif"
-    singularity pull --name ${NAME} shub://adriansev/el7cvmfs.sing:latest &> /dev/null
+    NAME="${IMAGE_DIR}/el7cvmfs.sif"
+    # singularity pull --name ${NAME} shub://adriansev/el7cvmfs.sing:latest &> /dev/null
+    singularity pull --name ${NAME} http://asevcenc.web.cern.ch/asevcenc/singularity/el7cvmfs &> /dev/null
     export CVMFS2GO_IMGPATH="${NAME}"
 fi
 
