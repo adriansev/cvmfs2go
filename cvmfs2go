@@ -51,8 +51,8 @@ declare -a SINGULARITY_CVMFS2GO_ARGS
 
 # Specify the location of Singularity image
 if [[ -z "${CVMFS2GO_IMG}" ]]; then
-    # CVMFS2GO_IMG="shub://adriansev/el7cvmfs.sing:latest"
-    CVMFS2GO_IMG="http://asevcenc.web.cern.ch/asevcenc/singularity/el7cvmfs"
+    CVMFS2GO_IMG="shub://adriansev/el7cvmfs.sing:latest"
+    # CVMFS2GO_IMG="docker://adriansevcenco/el7cvmfs:latest"
 fi
 
 # it was stated that singularity cache is not suitable for concurent access
@@ -60,7 +60,7 @@ fi
 if [[ ! -e "${CVMFS2GO_IMG}" ]]; then # unless is already a local image
     LOCAL_NAME="${IMAGE_DIR}/$(basename ${CVMFS2GO_IMG} | sed 's/:/_/g').sif"
     if [[ ! -e "${LOCAL_NAME}" ]]; then
-        singularity pull --name ${LOCAL_NAME} ${CVMFS2GO_IMG} #  &> /dev/null
+        singularity pull --name ${LOCAL_NAME} ${CVMFS2GO_IMG} # &> /dev/null
         export CVMFS2GO_IMG="${LOCAL_NAME}"
     fi
 fi
