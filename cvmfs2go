@@ -51,8 +51,7 @@ declare -a SINGULARITY_CVMFS2GO_ARGS
 
 # Specify the location of Singularity image
 if [[ -z "${CVMFS2GO_IMG}" ]]; then
-    CVMFS2GO_IMG="shub://adriansev/el7cvmfs.sing:latest"
-    # CVMFS2GO_IMG="docker://adriansevcenco/el7cvmfs:latest"
+    CVMFS2GO_IMG="docker://adriansevcenco/el7cvmfs:latest"
 fi
 
 # it was stated that singularity cache is not suitable for concurent access
