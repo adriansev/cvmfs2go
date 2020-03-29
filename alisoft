@@ -1,4 +1,26 @@
 #!/usr/bin/env bash
 export CVMFS_REPOSITORIES="alice.cern.ch,alice-ocdb.cern.ch"
-exec ./cvmfs2go "${@}"
+export CVMFS2GO_IMG="shub://adriansev/el7cvmfs.sing:latest"
+ALICE_PACKAGE="${ALICE_PACKAGE:-AliPhysics::vAN-20200329_JALIEN-1}"
+ALICE_PACKAGE_FNAME="$(echo ${ALICE_PACKAGE} | sed 's/:/_/g')"
 
+VERB="${1}"
+if [[ ! "${VERB}" == CVMFS_* ]]; then
+    if [[ "${VERB}" == "load" ]]; then
+        shift
+        SETUP_FILE="CVMFS2GO_LOAD_${ALICE_PACKAGE_FNAME}"
+        cat <<-EOF > ${SETUP_FILE}
+eval \$(/cvmfs/alice.cern.ch/bin/alienv printenv VO_ALICE@${ALICE_PACKAGE})
+EOF
+    fi
+
+    if [[ "${VERB}" == "enter" ]]; then
+        shift
+        SETUP_FILE="CVMFS2GO_EXEC_${ALICE_PACKAGE_FNAME}"
+        cat <<-EOF > ${SETUP_FILE}
+/cvmfs/alice.cern.ch/bin/alienv enter VO_ALICE@${ALICE_PACKAGE}
+EOF
+    fi
+fi
+
+./cvmfs2go ${SETUP_FILE} "${@}"
