@@ -3,7 +3,7 @@ Generic HEP oriented container as wrapper for CVMFS distributed software
 
 ## HEP oriented CVMFS based Singularity container
 * el7cvmfs   
-[**Download link**](http://asevcenc.web.cern.ch/asevcenc/singularity/el7cvmfs)   
+[**Usage instructions**](https://singularity-hub.org/collections/4203/usage)   
 
 The CVMFS base configuration is a merge of:   
 * cvmfs-config-default-1.7-1.noarch.rpm
