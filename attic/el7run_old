@@ -2,35 +2,37 @@
 
 hash cvmfs2 2>/dev/null || { echo >&2 "This helper script assume presence of cvmfs package on the host."; exit 1; }
 
-EL7RUN_BASE_DIR="${HOME}/.cvmfs"
-CACHE="${EL7RUN_BASE_DIR}/cvmfs-cache"
-CONFIG_DIR="${EL7RUN_BASE_DIR}/configs"
+CVMFS2GO_BASE_DIR="${HOME}/.cvmfs"
+CACHE="${CVMFS2GO_BASE_DIR}/cvmfs-cache"
+CONFIG_DIR="${CVMFS2GO_BASE_DIR}/configs"
+
 DEFAULT_CONFDIR="${CONFIG_DIR}/default"
 DEFAULT_CONF="${DEFAULT_CONFDIR}/default.local"
-MOUNT_DIR="${EL7RUN_BASE_DIR}/mount"
-IMAGE_DIR="${EL7RUN_BASE_DIR}/images"
+MOUNT_DIR="${CVMFS2GO_BASE_DIR}/mount"
+IMAGE_DIR="${CVMFS2GO_BASE_DIR}/images"
 mkdir -p ${CACHE} ${CONFIG_DIR} ${IMAGE_DIR} ${DEFAULT_CONFDIR} ${MOUNT_DIR}
 
 help () {
 echo "Run CVMFS based software in Centos7 HEP oriented container (it includes HEP_OSlibs dependency list)
-This script will automatically mount the host configured CVMFS repositories and if CVMFS_REPOSITORIES env variable is defined
-will attempt to private-mount those repose
-Singularity instance be be steered by env variable SINGULARITY_EL7RUN that should
-contain the exact arguments string as would have been used in cli or by usage of any Singularity steering env variables
-detailed at https://sylabs.io/guides/3.5/user-guide/appendix.html
+This script will automatically mount the host configured CVMFS repositories
+and if CVMFS_REPOSITORIES env variable is defined will attempt to private-mount those repositories.
+SINGULARITY_CVMFS2GO :: singularity steering, the contents will be pass as arguments to singularity command
+detailed at https://sylabs.io/guides/3.6/user-guide/appendix.html
+
 Command format: ${0} command
 If no command is used a bash shell will be started
-N.B.!!! a cache directory was created on host for keeping the cvmfs cache! -> ${CACHE}
+N.B.!!! a cache directory will be created (if user cvmfs mounts) on host for keeping the cvmfs cache! -> ${CACHE}
 IT WILL _NOT_ BE CLEAN UP AUTOMATICALLY!!!
-run : cvmfs2go cleanup
+run : ${0} cleanup
 CVMFS_ALIEN_CACHE documentation specify that cache can be deleted even when in use
 https://cvmfs.readthedocs.io/en/stable/cpt-configure.html#alien-cache"
 }
 
-get_default_conf () {
-    tmpdir="${EL7RUN_BASE_DIR}/tmpgit"
-    mkdir -p ${tmpdir}
-    git clone https://github.com/adriansev/cvmfs2go.git ${tmpdir}
+get_cvmfs_conf () {
+    local tmpdir
+    tmpdir="${CVMFS2GO_BASE_DIR}/tmpgit"
+    mkdir -p "${tmpdir}"
+    git clone https://github.com/adriansev/el7cvmfs.dock ${tmpdir}
     cp -r ${tmpdir}/etc_cvmfs/* ${DEFAULT_CONFDIR}/
     cp ${tmpdir}/default.local ${DEFAULT_CONFDIR}/
     sed -i "/^CVMFS_ALIEN_CACHE/c\CVMFS_ALIEN_CACHE=\"${CACHE}\"" ${DEFAULT_CONFDIR}/default.local
@@ -94,37 +96,36 @@ for repo in "${repo_list[@]}" ; do
     else
         MNT_POINT="${MOUNT_DIR}/${repo}"
         mkdir -p ${MNT_POINT}
-        echo cvmfs2 -o config=${CONF} ${repo} ${MNT_POINT}
+        cvmfs2 -o config=${CONF} ${repo} ${MNT_POINT}
     fi
 done
 
+# mount system cvmfs repositories within container
 for repo in $(ls /cvmfs); do
     [[ -n "${SINGULARITY_BINDPATH}" ]] && SINGULARITY_BINDPATH="/cvmfs/${repo},${SINGULARITY_BINDPATH}" || SINGULARITY_BINDPATH="/cvmfs/${repo}"
 done
 
+# mount user cvmfs repositories within container
 for repo in $(ls ${MOUNT_DIR}); do
     [[ -n "${SINGULARITY_BINDPATH}" ]] && SINGULARITY_BINDPATH="${MOUNT_DIR}/${repo}:/cvmfs/${repo},${SINGULARITY_BINDPATH}" || SINGULARITY_BINDPATH="${MOUNT_DIR}/${repo}:/cvmfs/${repo}"
 done
 export SINGULARITY_BINDPATH
 
 # Process additional singularity command line settings that can be setup by environment
-declare -a SINGULARITY_EL7RUN_ARGS
-[[ -n "${SINGULARITY_CVMFS2GO}" ]] && read -ra SINGULARITY_EL7RUN_ARGS <<< "${SINGULARITY_CVMFS2GO}"
+declare -a SINGULARITY_CVMFS2GO_ARGS
+[[ -n "${SINGULARITY_CVMFS2GO}" ]] && read -ra SINGULARITY_CVMFS2GO_ARGS <<< "${SINGULARITY_CVMFS2GO}"
 
 # Specify the location of Singularity image
-if [[ -z "${EL7RUN_IMG}" ]]; then
-    EL7RUN_IMG="docker://adriansevcenco/el7hep"
-fi
+[[ -z "${CVMFS2GO_IMG}" ]] && CVMFS2GO_IMG="shub://adriansev/el7cvmfs.sing"
 
-# it was stated that singularity cache is not suitable for concurent access
-# then let's save the image and use it
-if [[ ! -e "${EL7RUN_IMG}" ]]; then # unless is already a local image
-    LOCAL_NAME="${IMAGE_DIR}/$(basename ${EL7RUN_IMG} | sed 's/:/_/g').sif"
+# it was stated that singularity cache is not suitable for concurent access; then let's cache it
+if [[ ! -e "${CVMFS2GO_IMG}" ]]; then # unless is already a local image
+    LOCAL_NAME="${IMAGE_DIR}/$(basename ${CVMFS2GO_IMG} | sed 's/:/_/g').sif"
     if [[ ! -e "${LOCAL_NAME}" ]]; then
-        singularity pull --name ${LOCAL_NAME} ${EL7RUN_IMG} #  &> /dev/null
-        export EL7RUN_IMG="${LOCAL_NAME}"
+        singularity pull --name ${LOCAL_NAME} ${CVMFS2GO_IMG} #  &> /dev/null
+        export CVMFS2GO_IMG="${LOCAL_NAME}"
     fi
 fi
 
-exec singularity -s run "${SINGULARITY_EL7RUN_ARGS[@]}" ${EL7RUN_IMG} "${@}"
+echo exec singularity -s run "${SINGULARITY_CVMFS2GO_ARGS[@]}" ${CVMFS2GO_IMG} "${@}"
 
