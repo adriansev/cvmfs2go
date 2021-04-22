@@ -1,26 +1,22 @@
 #!/usr/bin/env bash
-export CVMFS_REPOSITORIES="alice.cern.ch,alice-ocdb.cern.ch"
-export CVMFS2GO_IMG="shub://adriansev/el7cvmfs.sing:latest"
-ALICE_PACKAGE="${ALICE_PACKAGE:-AliPhysics::vAN-20200329_JALIEN-1}"
-ALICE_PACKAGE_FNAME="$(echo ${ALICE_PACKAGE} | sed 's/:/_/g')"
 
-VERB="${1}"
-if [[ ! "${VERB}" == CVMFS_* ]]; then
-    if [[ "${VERB}" == "load" ]]; then
-        shift
-        SETUP_FILE="CVMFS2GO_LOAD_${ALICE_PACKAGE_FNAME}"
-        cat <<-EOF > ${SETUP_FILE}
-eval \$(/cvmfs/alice.cern.ch/bin/alienv printenv VO_ALICE@${ALICE_PACKAGE})
-EOF
-    fi
+export PATH=".:{PATH}"
+export CVMFS_REPOSITORIES_EXCLUSIVE="alice.cern.ch,alice-ocdb.cern.ch"
 
-    if [[ "${VERB}" == "enter" ]]; then
-        shift
-        SETUP_FILE="CVMFS2GO_EXEC_${ALICE_PACKAGE_FNAME}"
-        cat <<-EOF > ${SETUP_FILE}
-/cvmfs/alice.cern.ch/bin/alienv enter VO_ALICE@${ALICE_PACKAGE}
-EOF
-    fi
+ACTION="${1}"
+
+if [[ "${ACTION}" == "enter" ]]; then
+    shift
+    ALI_MODULE="${2}"
+    shift
+    cvmfs2go /cvmfs/alice.cern.ch/bin/alienv enter VO_ALICE@${ALI_MODULE}
+elif [[ "${ACTION}" == "load" ]]; then
+    shift
+    ALI_MODULE="${2}"
+    shift
+    /cvmfs/alice.cern.ch/bin/alienv printenv VO_ALICE@${ALI_MODULE} > sing_env
+    cvmfs2go --env-file sing_env "${@}"
+    rm -f sing_env
+else
+    cvmfs2go "${@}"
 fi
-
-./cvmfs2go ${SETUP_FILE} "${@}"
