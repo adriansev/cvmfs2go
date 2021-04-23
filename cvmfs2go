@@ -179,8 +179,17 @@ else  # we are mounting cvmfs on the host then set singularity bind paths
     autofs_mount_pin_all "${DEFINED_REPOSITORIES}" # let's mount all defined repositories; requesting a descriptor will also (autofs)mount
     # define Singularity bind paths
     for mount in $(cvmfs_mount_list) ; do SINGULARITY_BINDPATH="${SINGULARITY_BINDPATH}${SINGULARITY_BINDPATH:+,}${mount}" ; done
-    export SINGULARITY_BINDPATH
 fi
+
+# if pwd(cwd) is not part of home let's just bind-mount it
+CWD="$(realpath ${PWD})"
+USERHOME="$(realpath ${HOME})"
+if [[ "${CWD}" == "${CWD##${USERHOME}}" ]]; then  # user home is not part of cwd
+    CWD_MNT="$(df --output=target ${CWD} | tail -n +2)"  # let's bind mount the actual mount point of CWD
+    SINGULARITY_BINDPATH="${SINGULARITY_BINDPATH}${SINGULARITY_BINDPATH:+,}${CWD_MNT}"
+fi
+
+export SINGULARITY_BINDPATH
 
 # Process additional singularity command line settings that can be setup by environment
 declare -a SINGULARITY_CVMFS2GO_ARGS
