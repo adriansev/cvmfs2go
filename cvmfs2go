@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 shopt -s extglob
 
-CVMFS2GO_BASE_DIR="${CVMFS2GO_BASE_DIR:-${HOME}/.cvmfs2go}"
-CVMFS2GO_CACHE="${CVMFS2GO_CACHE:-${CVMFS2GO_BASE_DIR}/cache}"
+export CVMFS2GO_BASE_DIR="${CVMFS2GO_BASE_DIR:-${HOME}/.cvmfs2go}"
+export CVMFS2GO_CACHE="${CVMFS2GO_CACHE:-${CVMFS2GO_BASE_DIR}/cache}"
 
-CVMFS2GO_CONFIG_DIR="${CVMFS2GO_CONFIG_DIR:-${CVMFS2GO_BASE_DIR}/config}"
-CVMFS2GO_CONF="${CVMFS2GO_CONF:-${CVMFS2GO_CONFIG_DIR}/default.local}"
+export CVMFS2GO_CONFIG_DIR="${CVMFS2GO_CONFIG_DIR:-${CVMFS2GO_BASE_DIR}/config}"
+export CVMFS2GO_CONF="${CVMFS2GO_CONF:-${CVMFS2GO_CONFIG_DIR}/default.local}"
 
-CVMFS2GO_MOUNT_DIR="${CVMFS2GO_MOUNT_DIR:-${CVMFS2GO_BASE_DIR}/mount}"
-CVMFS2GO_IMAGE_DIR="${CVMFS2GO_IMAGE_DIR:-${CVMFS2GO_BASE_DIR}/images}"
+export CVMFS2GO_MOUNT_DIR="${CVMFS2GO_MOUNT_DIR:-${CVMFS2GO_BASE_DIR}/mount}"
+export CVMFS2GO_IMAGE_DIR="${CVMFS2GO_IMAGE_DIR:-${CVMFS2GO_BASE_DIR}/images}"
 
-CVMFS2GO_IMG="${CVMFS2GO_IMG:-shub://adriansev/el7cvmfs.sing}" # Specify the location of Singularity image
+export CVMFS2GO_IMG="${CVMFS2GO_IMG:-shub://adriansev/el7cvmfs.sing}" # Specify the location of Singularity image
+
+export SINGULARITYENV_PS1='\[\033[1;31m\]${SINGULARITY_NAME}#\[\033[1;32m\][\D{%A %d.%m.%y %H:%M}] \u@\h : \[\033[1;34m\]\w \[\033[00m\]\n'
 
 hash cvmfs2 2>/dev/null && DO_CONTAINER_CVMFS="" || DO_CONTAINER_CVMFS="1"  # if host does not have cvmfs package, mount repos _inside_ the container
 [[ -e /etc/cvmfs/default.conf ]] && DO_CONTAINER_CVMFS="" || DO_CONTAINER_CVMFS="1"  # if host does not have cvmfs default configuration, mount repos _inside_ the container
