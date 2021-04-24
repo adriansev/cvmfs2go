@@ -1,0 +1,6 @@
+#!/usr/bin/bash
+
+# Load the environment for these ALICE modules
+ALICE_PACKAGES="VO_ALICE@O2::nightly-20210424-1,VO_ALICE@O2DPG::prod-202104-22-1"
+eval $(/cvmfs/alice.cern.ch/bin/alienv printenv "${ALICE_PACKAGES}");
+
