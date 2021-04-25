@@ -52,12 +52,21 @@ Argument list:
 -clean|-cleanup|cleanup           : delete contents of cvmfs private cache -> ${CVMFS2GO_CACHE}
 -cleanimg|-cleanupimg|cleanupimg  : delete contents of containers local cache -> ${CVMFS2GO_IMAGE_DIR}
 -getdefaultconf|getdefaultconf    : for private mounting initialize the cvmfs configuration with https://github.com/adriansev/el7cvmfs.dock/tree/master/etc_cvmfs
--c|conf                           : specify an alternative to CVMFS2GO_CONFIG_DIR/default.local; can be also specified by CVMFS2GO_CONF
+-conf|conf                           : specify an alternative to CVMFS2GO_CONFIG_DIR/default.local; can be also specified by CVMFS2GO_CONF
 -shell                             : instead of \"run\" use \"shell\" for singularity command
 -exec                              : instead of \"run\" use \"exec\" for singularity command
 
-any other arguments are passed to the container
-"
+Singularity steering options:
+-e|--cleanenv
+-c|--contain
+-C|--containall
+--env strings
+--env-file file
+
+more options can set to SINGULARITY_CVMFS2GO :: the contents will be passed as arguments to singularity command
+see https://sylabs.io/guides/3.7/user-guide/appendix.html
+
+any other arguments are passed to the container"
 }
 
 create_user_dirs () { mkdir -p ${CVMFS2GO_CACHE} ${CVMFS2GO_IMAGE_DIR} ${CVMFS2GO_MOUNT_DIR} ${CVMFS2GO_CONFIG_DIR}; }
@@ -138,7 +147,7 @@ while [[ $# -gt 0 ]]; do
         get_cvmfs_conf
         shift
         ;;
-        -c|-conf|--c|--conf|conf)
+        -conf|--conf|conf)
         CVMFS2GO_CONF="${2}"
         shift # past argument
         shift # past value
