@@ -105,6 +105,18 @@ eval exec "${FD}""<&-"
 
 autofs_mount_unpin_all () { for repo in cvmfs_mount_list; do autofs_mount_unpin "${repo}"; done; }
 
+mk_envfile () {
+local outfile
+[[ ! -f "${1}" ]] && return 1;
+outfile="$(md5sum ${1} | cut -d' ' -f1)"
+cat "${1}" | sed 's/;/\n/g;' | sed '/^export /d' > "${outfile}"
+echo "${outfile}"
+}
+
+# Process additional singularity command line settings that can be setup by environment
+declare -a SINGULARITY_CVMFS2GO_ARGS
+[[ -n "${SINGULARITY_CVMFS2GO}" ]] && read -ra SINGULARITY_CVMFS2GO_ARGS <<< "${SINGULARITY_CVMFS2GO}"
+
 ARG_LIST=()
 SING_ACTION="run"
 while [[ $# -gt 0 ]]; do
@@ -132,11 +144,36 @@ while [[ $# -gt 0 ]]; do
         shift # past value
         ;;
         -shell|--shell)
-        SING_ACTION="shell"
+        [[ -z "${SET_ACTION}" ]] && { SING_ACTION="shell" ; SET_ACTION="1"; }
         shift
         ;;
         -exec|--exec)
-        SING_ACTION="exec"
+        [[ -z "${SET_ACTION}" ]] && { SING_ACTION="exec" ; SET_ACTION="1"; }
+        shift
+        ;;
+        -e|--cleanenv)
+        SINGULARITY_CVMFS2GO_ARGS+=(-e)
+        shift
+        ;;
+        -c|--contain)
+        SINGULARITY_CVMFS2GO_ARGS+=(-c)
+        shift
+        ;;
+        -C|--containall)
+        SINGULARITY_CVMFS2GO_ARGS+=(-C)
+        shift
+        ;;
+        --env)
+        SINGULARITY_CVMFS2GO_ARGS+=(--env)
+        SINGULARITY_CVMFS2GO_ARGS+=("${2}")
+        shift
+        shift
+        ;;
+        --env-file)
+        SINGULARITY_CVMFS2GO_ARGS+=(--env-file)
+        outfile="$(mk_envfile ${2})"
+        SINGULARITY_CVMFS2GO_ARGS+=("${outfile}")
+        shift
         shift
         ;;
         *)    # unknown option
@@ -190,10 +227,6 @@ if [[ "${CWD}" == "${CWD##${USERHOME}}" ]]; then  # user home is not part of cwd
 fi
 
 export SINGULARITY_BINDPATH
-
-# Process additional singularity command line settings that can be setup by environment
-declare -a SINGULARITY_CVMFS2GO_ARGS
-[[ -n "${SINGULARITY_CVMFS2GO}" ]] && read -ra SINGULARITY_CVMFS2GO_ARGS <<< "${SINGULARITY_CVMFS2GO}"
 
 # it was stated that singularity cache is not suitable for concurent access; then let's cache it
 if [[ ! -e "${CVMFS2GO_IMG}" ]]; then # if not a local image
