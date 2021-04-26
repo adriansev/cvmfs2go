@@ -4,9 +4,6 @@ shopt -s extglob
 export CVMFS2GO_BASE_DIR="${CVMFS2GO_BASE_DIR:-${HOME}/.cvmfs2go}"
 export CVMFS2GO_CACHE="${CVMFS2GO_CACHE:-${CVMFS2GO_BASE_DIR}/cache}"
 
-export CVMFS2GO_CONFIG_DIR="${CVMFS2GO_CONFIG_DIR:-${CVMFS2GO_BASE_DIR}/config}"
-export CVMFS2GO_CONF="${CVMFS2GO_CONF:-${CVMFS2GO_CONFIG_DIR}/default.local}"
-
 export CVMFS2GO_MOUNT_DIR="${CVMFS2GO_MOUNT_DIR:-${CVMFS2GO_BASE_DIR}/mount}"
 export CVMFS2GO_IMAGE_DIR="${CVMFS2GO_IMAGE_DIR:-${CVMFS2GO_BASE_DIR}/images}"
 
@@ -33,8 +30,6 @@ CVMFS2GO_MOUNT_DIR       : defaults to CVMFS2GO_BASE_DIR/mount ; location of pri
 CVMFS2GO_IMAGE_DIR       : defaults to CVMFS2GO_BASE_DIR/images ; location for downloaded images
 CVMFS2GO_CONTAINER_MOUNT : force the cvmfs mounting within the container
 CVMFS2GO_IMG :           : singularity image to use ; defaults to shub://adriansev/el7cvmfs.sing
-CVMFS2GO_CONFIG_DIR      : defaults to CVMFS2GO_BASE_DIR/config ; location of cvmfs configuration for private/container mounting 
-CVMFS2GO_CONF            : defaults to CVMFS2GO_CONFIG_DIR/default.local ; the actual configuration file
 
 Singularity steering variables
 SINGULARITY_CVMFS2GO :: singularity steering, the contents will be passed as arguments to singularity command:
@@ -51,8 +46,6 @@ Argument list:
 -h|-help|help                     : print this help message
 -clean|-cleanup|cleanup           : delete contents of cvmfs private cache -> ${CVMFS2GO_CACHE}
 -cleanimg|-cleanupimg|cleanupimg  : delete contents of containers local cache -> ${CVMFS2GO_IMAGE_DIR}
--getdefaultconf|getdefaultconf    : for private mounting initialize the cvmfs configuration with https://github.com/adriansev/el7cvmfs.dock/tree/master/etc_cvmfs
--conf|conf                        : specify an alternative to CVMFS2GO_CONFIG_DIR/default.local; can be also specified by CVMFS2GO_CONF
 -cache|cache                      : request cacheing of the remote image to a local sif image
 -shell                            : instead of \"run\" use \"shell\" for singularity command
 -exec                             : instead of \"run\" use \"exec\" for singularity command
@@ -70,18 +63,7 @@ see https://sylabs.io/guides/3.7/user-guide/appendix.html
 any other arguments are passed to the container"
 }
 
-create_user_dirs () { mkdir -p ${CVMFS2GO_CACHE} ${CVMFS2GO_IMAGE_DIR} ${CVMFS2GO_MOUNT_DIR} ${CVMFS2GO_CONFIG_DIR}; }
-
-get_cvmfs_conf () {
-    local tmpdir
-    tmpdir="${CVMFS2GO_BASE_DIR}/tmpgit"
-    mkdir -p "${tmpdir}"
-    git clone https://github.com/adriansev/el7cvmfs.dock ${tmpdir}
-    cp -r ${tmpdir}/etc_cvmfs/* ${DEFAULT_CONFDIR}/
-    cp ${tmpdir}/default.local ${DEFAULT_CONFDIR}/
-    sed -i "/^CVMFS_ALIEN_CACHE/c\CVMFS_ALIEN_CACHE=\"${CACHE}\"" ${DEFAULT_CONFDIR}/default.local
-    rm -rf ${tmpdir}
-}
+create_user_dirs () { mkdir -p ${CVMFS2GO_CACHE} ${CVMFS2GO_IMAGE_DIR} ${CVMFS2GO_MOUNT_DIR}; }
 
 cvmfs_mount_list () { awk '$1 ~ /cvmfs2/ {print $2}' /proc/mounts /etc/mtab | sort -u; }
 fd_list_map () { find /proc/$$/fd -type l -printf '%P  %l\n'; }
@@ -144,15 +126,6 @@ while [[ $# -gt 0 ]]; do
         [[ -d ${CVMFS2GO_IMAGE_DIR} ]] && rm -rf ${CVMFS2GO_IMAGE_DIR}/*;
         exit;
         ;;
-        -getdefaultconf|--getdefaultconf|getdefaultconf)
-        get_cvmfs_conf
-        shift
-        ;;
-        -conf|--conf|conf)
-        CVMFS2GO_CONF="${2}"
-        shift # past argument
-        shift # past value
-        ;;
         -cache|--cache|cache)
         DO_CACHE="1"
         shift
@@ -203,18 +176,12 @@ if [[ -n ${DO_CONTAINER_CVMFS} ]]; then  # if we mount INSIDE the container
     export SINGULARITY_BINDPATH="${SINGULARITY_BINDPATH}${SINGULARITY_BINDPATH:+,}${CACHE}:/var/lib/cvmfs"
     export SINGULARITY_SCRATCHDIR="${SINGULARITY_SCRATCHDIR:-/var/run/cvmfs}"
     create_user_dirs
-    get_cvmfs_conf
 fi
 
 if [[ -n "${CVMFS_REPOSITORIES_EXCLUSIVE}" ]]; then  # use these env defined repositories exclusively
     DEFINED_REPOSITORIES="${CVMFS_REPOSITORIES_EXCLUSIVE}"
 else
     DEFINED_REPOSITORIES="${CVMFS_REPOSITORIES}"  # if defined in environment
-    if [[ -e "${CONF}" ]]; then  # if specified in command line configuration
-        source "${CONF}"
-        DEFINED_REPOSITORIES="${CVMFS_REPOSITORIES}${CVMFS_REPOSITORIES:+,}${CVMFS_REPOSITORIES}"
-        unset CVMFS_REPOSITORIES
-    fi
     if [[ -e /etc/cvmfs/default.local ]];then  # read the system definition is there's one
         source "/etc/cvmfs/default.local"
         DEFINED_REPOSITORIES="${DEFINED_REPOSITORIES}${DEFINED_REPOSITORIES:+,}${CVMFS_REPOSITORIES}"
@@ -241,7 +208,7 @@ if [[ "${CWD}" == "${CWD##${USERHOME}}" ]]; then  # user home is not part of cwd
 fi
 export SINGULARITY_BINDPATH
 
-# if explict local cache is requested
+# if explicit local cache is requested
 if [[ -n "${DO_CACHE}" ]]; then
     LOCAL_NAME="${IMAGE_DIR}/$(basename ${CVMFS2GO_IMG} | sed 's/:/_/g').sif"
     if [[ ! -e "${LOCAL_NAME}" ]]; then

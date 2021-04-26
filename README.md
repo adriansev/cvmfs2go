@@ -3,7 +3,6 @@ Generic HEP oriented container as wrapper for CVMFS distributed software
 
 ## HEP oriented CVMFS based Singularity container
 * el7cvmfs   
-[**Usage instructions**](https://singularity-hub.org/collections/4203/usage)   
 
 The CVMFS base configuration is a merge of:   
 * cvmfs-config-default-2.0-1.noarch.rpm
@@ -16,9 +15,7 @@ an approved/standardized environment (so, the above el7cvmfs singularity image w
 There are 2 possibilities:   
 1. Use host cvmfs: the repositories will be touchd/pinned to trigger automounting   
 and all /cvmfs mounts will be presented to singularity for bind mounting
-2. Use container cvmfs: a default configuration will be downloaded into the user home
-to be bind-mounted to container /etc/cvmfs; then all specified repositories will be fuse-mounted
-INTO the container
+2. Use container cvmfs:  all specified repositories will be fuse-mounted INTO the container
 
 ```
 ./cvmfs2go help
@@ -34,8 +31,6 @@ CVMFS2GO_MOUNT_DIR       : defaults to CVMFS2GO_BASE_DIR/mount ; location of pri
 CVMFS2GO_IMAGE_DIR       : defaults to CVMFS2GO_BASE_DIR/images ; location for downloaded images
 CVMFS2GO_CONTAINER_MOUNT : force the cvmfs mounting within the container
 CVMFS2GO_IMG :           : singularity image to use ; defaults to shub://adriansev/el7cvmfs.sing
-CVMFS2GO_CONFIG_DIR      : defaults to CVMFS2GO_BASE_DIR/config ; location of cvmfs configuration for private/container mounting
-CVMFS2GO_CONF            : defaults to CVMFS2GO_CONFIG_DIR/default.local ; the actual configuration file
 
 Singularity steering variables
 SINGULARITY_CVMFS2GO :: singularity steering, the contents will be passed as arguments to singularity command:
@@ -52,10 +47,19 @@ Argument list:
 -h|-help|help                     : print this help message
 -clean|-cleanup|cleanup           : delete contents of cvmfs private cache -> /home/adrian/.cvmfs2go/cache
 -cleanimg|-cleanupimg|cleanupimg  : delete contents of containers local cache -> /home/adrian/.cvmfs2go/images
--getdefaultconf|getdefaultconf    : for private mounting initialize the cvmfs configuration with https://github.com/adriansev/el7cvmfs.dock/tree/master/etc_cvmfs
--c|conf                           : specify an alternative to CVMFS2GO_CONFIG_DIR/default.local; can be also specified by CVMFS2GO_CONF
-shell                             : instead of "run" use "shell" for singularity command
-exec                              : instead of "run" use "exec" for singularity command
+-cache|cache                      : request cacheing of the remote image to a local sif image
+-shell                            : instead of "run" use "shell" for singularity command
+-exec                             : instead of "run" use "exec" for singularity command
+
+Singularity steering options:
+-e|--cleanenv
+-c|--contain
+-C|--containall
+--env strings
+--env-file file
+
+more options can set to SINGULARITY_CVMFS2GO :: the contents will be passed as arguments to singularity command
+see https://sylabs.io/guides/3.7/user-guide/appendix.html
 
 any other arguments are passed to the container
 ```
