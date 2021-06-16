@@ -29,7 +29,7 @@ CVMFS2GO_CACHE           : defaults to CVMFS2GO_BASE_DIR/cache ; this is the loc
 CVMFS2GO_MOUNT_DIR       : defaults to CVMFS2GO_BASE_DIR/mount ; location of private mounts
 CVMFS2GO_IMAGE_DIR       : defaults to CVMFS2GO_BASE_DIR/images ; location for downloaded images
 CVMFS2GO_CONTAINER_MOUNT : force the cvmfs mounting within the container
-CVMFS2GO_IMG :           : singularity image to use ; defaults to shub://adriansev/el7cvmfs.sing
+CVMFS2GO_IMG :           : singularity image to use ; defaults to oras://registry.cern.ch/asevcenc/el7cvmfs:latest
 
 Singularity steering variables
 SINGULARITY_CVMFS2GO :: singularity steering, the contents will be passed as arguments to singularity command:
